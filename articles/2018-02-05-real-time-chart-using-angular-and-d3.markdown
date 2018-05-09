@@ -28,29 +28,25 @@ This article will build a virtual market application that shows a d3 multi-line 
 ## Creating a Virtual Market Server
 The demo app we are going to build consists of two parts. One is a Node.js server serving market data and the other is an Angular application consuming the data. As stated, the server will consist of an express API and a socket io endpoint to serve the data continuously.
 
-Create a folder and name it `Virtual Market`. Inside this folder, create a sub folder named `server`. Open a command prompt in the `server` folder and run the following command to generate the `package.json` file:
+Create a folder and name it `virtual-market`. Inside this folder, create a sub folder named `server`. Open a command prompt in the `server` folder and run the following command to generate the `package.json` file:
 
 ```bash
-npm init
+npm init -y
 ```
 
-Continue with default values for the inputs it asks. Open the `package.json` file once this command ends and add the following dependencies to it:
+This command generates the `package.json` file with default configuration. Then run the following command to install the required packages for the server:
 
-```js
-"dependencies": {
-  "express": "^4.16.2",
-  "moment": "^2.20.1",
-  "socket.io": "^2.0.4"
-}
+```bash
+npm install express moment socket.io
 ```
 
-Install these packages using the `npm install` command. Once they are installed, we are good to build the server.
+Once they are installed, we are good to build the server.
 
 ### Building an Express API
 Add a new file and name it `market.js`. This file will be used like a utility. It will contain the data of a virtual market and it will contain a method to update the data. For now, we will add the data alone and the method will be added while creating the socket.io endpoint. Add the following code to this file:
 
 ```js
-let moment = require("moment");
+const moment = require("moment");
 
 let marketPositions = [
   {
@@ -71,24 +67,24 @@ If you need more data in the `marketPositions` array, copy it from the demo code
 Add another file and name it `index.js`. This file will do all the Node.js work required. For now, we will add the code to create an express REST endpoint to serve the data. Add the following code to the file `index.js`.
 
 ```js
-let app = require('express')();
-let http = require('http').Server(app);
-let io = require('socket.io')(http);
-let market = require('./market');
+const app = require('express')();
+const http = require('http').Server(app);
+const io = require('socket.io')(http);
+const market = require('./market');
 
 const port =  3000;
 
-app.use(function (req, res, next) {
+app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
   next();
 });
 
-app.get('/api/market', function (req, res) {
+app.get('/api/market', (req, res) => {
   res.send(market.marketPositions);
 });
 
-http.listen(port, function () {
+http.listen(port, () => {
   console.log(`Listening on *:${port}`);
 });
 ```
@@ -99,7 +95,7 @@ After saving this file, you can start the server. Run the following command to s
 node index.js
 ```
 
-This command starts the Node.js server on the port 3000. Once the server starts, you can visit the URL http://localhost:3000/api/market to see the market updates on last few days.
+This command starts the Node.js server on the port 3000. Once the server starts, you can visit the URL [http://localhost:3000/api/market](http://localhost:3000/api/market) to see the market updates on last few days.
 
 ### Adding Socket IO to Serve Data in Realtime
 We need to simulate a realtime market by updating the market data once in every 5 seconds. For this, we will add a method to the file `market.js` and this method will be called from the socket.io endpoint to be created in `index.js`. Open the file `market.js` and add the following code to it:
@@ -109,8 +105,9 @@ let counter =  0;
 
 function updateMarket() {
   let diff = Math.floor(Math.random() *  1000) /  100;
-  let lastDay = moment(marketPositions[0].date, "DD-MM-YYYY").add(1, "days"),
-open, close;
+  let lastDay = moment(marketPositions[0].date, "DD-MM-YYYY").add(1, "days");
+  let open;
+  let close;
 
   if (counter %  2  ===  0) {
     open = marketPositions[0].open + diff;
@@ -145,7 +142,7 @@ Open the file `index.js`, we will now add a socket.io connection to this file. T
 ```js
 setInterval(function () {
   market.updateMarket();
-  io.sockets.emit('market', market.marketPositions\[0\]);
+  io.sockets.emit('market', market.marketPositions[0]);
 }, 5000);
 
 io.on('connection', function (socket) {
@@ -153,11 +150,11 @@ io.on('connection', function (socket) {
 });
 ```
 
-Now the server is ready and we can start building the Angular client to use this.
+Now the server is ready and we can start building the Angular client to use this. To keep the server running, issue the command `node index.js`, if you haven't done it yet.
 
 ## Building Angular Application
 ### Setting up the application
-To generate the Angular application, you can use Angular CLI. There are two ways to do it. One is to install the CLI globally and use it and the other is to use npx. I like using npx for this, because it avoids the need to install the package globally and it works with the packages installed in an application as well. Incase if you are not aware of [npx](https://www.npmjs.com/package/npx), it is a command line utility that gets installed with npm version 5.2 and above. npx makes the job of using the global npm packages easier by removing the need of installing the package globally. If you want to use npx, make sure that you have npm 5.2 or above installed. Run the following command to generate the project:
+To generate the Angular application, you can use Angular CLI. There are two ways to do it. One is to install the CLI globally and use it and the other is to use npx. I like using npx for this, because it avoids the need to install the package globally and it works with the packages installed in an application as well. Incase if you are not aware of [npx](https://www.npmjs.com/package/npx), it is a command line utility that gets installed with npm version 5.2 and above. npx makes the job of using the global npm packages easier by removing the need of installing the package globally. If you want to use npx, make sure that you have npm 5.2 or above installed. Go to the `virtual-market` folder on a command prompt and run the following command to generate the project:
 
 ```bash
 npx @angular/cli new angular-d3-chart
@@ -166,13 +163,13 @@ npx @angular/cli new angular-d3-chart
 Once the project is generated, we need to install the d3 and socket.io client libraries. Move to the project folder on the command prompt and run the following command to install these libraries:
 
 ```bash
-npm install d3 socket.io-client --save
+npm install d3 socket.io-client
 ```
 
 As we will be using these libraries with TypeScript, it is good to have their typings installed. Run the following command to install the typings:
 
 ```bash
-npm i @types/d3 @types/socket.io-client --save-dev
+npm i @types/d3 @types/socket.io-client -D
 ```
 
 Now the setup process is done and you can run the application to see if everything is fine. Run the following command to start the application:
@@ -181,22 +178,48 @@ Now the setup process is done and you can run the application to see if everythi
 npm start
 ```
 
-Open a browser and change the URL to http://localhost:4200 to see the default page.
+Open a browser and change the URL to [http://localhost:4200](http://localhost:4200) to see the default page.
 
 ### Building a component to display multi-line chart
-Now that the application setup is ready, let's add the required code to it. We will be adding a component to display a multiline d3 chart and the chart will use the data served by the Node.js server. As first thing, let's create a service to fetch the data. For now, the service will consume the REST API to get the stock data. We will consume realtime data from the socket.io endpoint later.  Run the following command to add a file for this service and register it in the module:
+Now that the application setup is ready, let's add the required code to it. We will be adding a component to display a multiline d3 chart and the chart will use the data served by the Node.js server. As first thing, let's create a service to fetch the data. For now, the service will consume the REST API to get the stock data. We will consume realtime data from the socket.io endpoint later. Run the following command to add a file for this service:
 
 ```bash
-npx ng generate service market-status --module app.module
+npx ng generate service market-status
 ```
 
 Or you could use the shorter form of this command:
 
 ```bash
-npx ng g s market-status -m app.module
+npx ng g s market-status
 ```
 
-Add a new file named `market-status.service.ts` to the `app` folder and add the following code to it:
+To consume the REST APIs, we need the `HttpClient` service from the module `HttpClientModule`. The module `HttpClientModule` has to be imported into the application's module for this. Open the file `app.module.ts` and change it as shown below:
+
+```typescript
+import { BrowserModule } from '@angular/platform-browser';
+import { NgModule } from '@angular/core';
+import { HttpClientModule } from '@angular/common/http';
+
+import { AppComponent } from './app.component';
+
+@NgModule({
+  declarations: [
+    AppComponent
+  ],
+  imports: [
+    BrowserModule,
+    HttpClientModule
+  ],
+  providers: [],
+  bootstrap: [AppComponent]
+})
+export class AppModule { }
+```
+
+The changes made in this file are marked with numbered comments. The `HttpClientModule` is imported and it is added to the `imports` section of the module.
+
+
+Open the file `market-status.service.ts` on your editor and add the following code to it:
 
 ```typescript
 import { Injectable } from  '@angular/core';
@@ -207,8 +230,10 @@ import  *  as socketio from  'socket.io-client';
 
 import { MarketPrice } from  './market-price';
 
-@Injectable()
-export  class MarketStatusService {
+@Injectable({
+  providedIn: 'root'
+})
+export class MarketStatusService {
   
   private baseUrl =  'http://localhost:3000';
   constructor(private httpClient: HttpClient) { }
@@ -218,6 +243,8 @@ export  class MarketStatusService {
   }
 }
 ```
+
+The variable `socketio` imported in the above file will be used later to fetch data from the Socket IO endpoint.
 
 The `MarketStatusService` uses the class `MarketPrice` for the structure of the data received from the API. Let's create this class now. Add a new file named `market-price.ts` to the `app` folder and add the following code to it:
 
@@ -283,53 +310,54 @@ export class MarketChartComponent implements OnChanges {
 }
 ```
 
-Now the `MarketStatusComponent` class has everything required to render the chart. In addition to the local variable for the div and the lifecycle hook, the class has a few fields that will be used while rendering the chart. The `parseDate` method converts string value to date. It is used by the `formatData` method. The private fields `svgElement` and `chartProps` will be used to hold reference of the SVG element and the properties of the chart respectively. These fields would be quite useful to re-render the chart.
+Now the `MarketChartComponent` class has everything required to render the chart. In addition to the local variable for the div and the lifecycle hook, the class has a few fields that will be used while rendering the chart. The `parseDate` method converts string value to date. It is used by the `formatData` method. The private fields `svgElement` and `chartProps` will be used to hold reference of the SVG element and the properties of the chart respectively. These fields would be quite useful to re-render the chart.
 
-Add the following method to the `MarketStatusComponent` to build the chart:
+Add the following method to the `MarketChartComponent` to build the chart:
 
 ```typescript
-buildChart() {
+ buildChart() {
   this.chartProps = {};
   this.formatDate();
 
-  // Set the dimensions of the graph
-  let margin = { top: 30, right: 20, bottom: 30, left: 50 },
+  // Set the dimensions of the canvas / graph
+  var margin = { top: 30, right: 20, bottom: 30, left: 50 },
     width = 600 - margin.left - margin.right,
     height = 270 - margin.top - margin.bottom;
 
   // Set the ranges
-  this.chartProps.x = d3.scaleTime().range(\[0, width\]);
-  this.chartProps.y = d3.scaleLinear().range(\[height, 0\]);
+  this.chartProps.x = d3.scaleTime().range([0, width]);
+  this.chartProps.y = d3.scaleLinear().range([height, 0]);
 
   // Define the axes
-  let xAxis = d3.axisBottom(this.chartProps.x);
-  let yAxis = d3.axisLeft(this.chartProps.y).ticks(5);
+  var xAxis = d3.axisBottom(this.chartProps.x);
+  var yAxis = d3.axisLeft(this.chartProps.y).ticks(5);
+
   let _this = this;
 
   // Define the line
-  let valueline = d3.line<MarketPrice>()
+  var valueline = d3.line<MarketPrice>()
     .x(function (d) {
       if (d.date instanceof Date) {
         return _this.chartProps.x(d.date.getTime());
       }
     })
-    .y(function (d) { return _this.chartProps.y(d.close); });
+    .y(function (d) { console.log('Close market'); return _this.chartProps.y(d.close); });
 
   // Define the line
-  let valueline2 = d3.line<MarketPrice>()
+  var valueline2 = d3.line<MarketPrice>()
     .x(function (d) {
       if (d.date instanceof Date) {
         return _this.chartProps.x(d.date.getTime());
       }
     })
-    .y(function (d) { return _this.chartProps.y(d.open); });
+    .y(function (d) { console.log('Open market'); return _this.chartProps.y(d.open); });
 
-  let svg = d3.select(this.chartElement.nativeElement)
+  var svg = d3.select(this.chartElement.nativeElement)
     .append('svg')
     .attr('width', width + margin.left + margin.right)
     .attr('height', height + margin.top + margin.bottom)
     .append('g')
-    .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+    .attr('transform', `translate(${margin.left},${margin.top})`);
 
   // Scale the range of the data
   this.chartProps.x.domain(
@@ -337,26 +365,29 @@ buildChart() {
       if (d.date instanceof Date)
         return (d.date as Date).getTime();
     }));
-
   this.chartProps.y.domain([0, d3.max(this.marketStatus, function (d) {
     return Math.max(d.close, d.open);
   })]);
-
-  // Add the valueline path.
-  svg.append('path')
-    .attr('class', 'line line1')
-    .attr('d', valueline(_this.marketStatus));
 
   // Add the valueline2 path.
   svg.append('path')
     .attr('class', 'line line2')
     .style('stroke', 'green')
+    .style('fill', 'none')
     .attr('d', valueline2(_this.marketStatus));
+
+  // Add the valueline path.
+  svg.append('path')
+    .attr('class', 'line line1')
+    .style('stroke', 'black')
+    .style('fill', 'none')
+    .attr('d', valueline(_this.marketStatus));
+
 
   // Add the X Axis
   svg.append('g')
     .attr('class', 'x axis')
-    .attr('transform', 'translate(0,' + height + ')')
+    .attr('transform', `translate(0,${height})`)
     .call(xAxis);
 
   // Add the Y Axis
@@ -424,7 +455,7 @@ export  class AppComponent {
 
 Save these changes and run the application using the `ng serve` command. Visit the URL http://localhost:4200, you will see a page with a chart similar to the following image:
 
-[image of chart]
+[Figure 1 - image of chart]
 
 ### Updating the Chart when the Market has an Update
 Now that we have the chart rendered on the page, let's receive the market updates from socket.io and update the chart. To receive the updates, we need to add a listener to the socket.io endpoint in the service `market-status.service.ts`. Open this file and add the following method to it:
@@ -512,6 +543,16 @@ ngOnChanges() {
     this.buildChart();
   }
 }
+```
+
+Now if you run the application, you will see an error on the browser console saying `global is not defined`.
+
+[Figure 2 - console error saying global is not defined]
+
+This is because, Angular CLI 6 removed the global object and socket IO uses it. To fix this, add the following statement to the file `polyfills.ts`:
+
+```typescript
+(window as any).global = window;
 ```
 
 With this, all the changes are done. Save the changes and run the application. Now you will see the graph updating once in every 5 seconds.
